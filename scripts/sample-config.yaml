@@ -1,0 +1,27 @@
+server:
+  domain: example.com
+  certificate_file: /etc/sb2sub/certs/fullchain.pem
+  certificate_key_file: /etc/sb2sub/certs/privkey.pem
+protocols:
+  vless:
+    enabled: true
+    listen: "::"
+    listen_port: 443
+    server_name: www.cloudflare.com
+    reality_public_key: reality-public-key
+    reality_private_key: reality-private-key
+    reality_short_id: "01234567"
+    reality_handshake: www.cloudflare.com
+    reality_server_port: 443
+    inbound_tag: vless-reality
+  hysteria2:
+    enabled: true
+    listen: "::"
+    listen_port: 8443
+    up_mbps: 200
+    down_mbps: 200
+    inbound_tag: hysteria2
+    obfs_type: salamander
+    obfs_password: change-me
+stats:
+  listen: 127.0.0.1:10085

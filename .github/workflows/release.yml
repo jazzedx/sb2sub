@@ -1,0 +1,64 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: 运行测试
+        run: go test ./...
+
+      - name: 运行本地演练
+        run: bash scripts/dev-smoke.sh
+
+  release:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: 安装交叉编译工具
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: 生成发布包
+        env:
+          TARGETS: linux/amd64 linux/arm64
+          CC_ARM64: aarch64-linux-gnu-gcc
+        run: bash scripts/build-release.sh "${GITHUB_REF_NAME}"
+
+      - name: 校验 amd64 发布包
+        env:
+          TARGET_ARCH: amd64
+        run: bash scripts/verify-release.sh "${GITHUB_REF_NAME}"
+
+      - name: 发布 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/checksums.txt

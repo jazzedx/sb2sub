@@ -1,0 +1,12 @@
+[Unit]
+Description=sing-box for sb2sub
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/sing-box run -c /etc/sb2sub/sing-box.json
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

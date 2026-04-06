@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE_FILE=${BASH_SOURCE[0]}
+while [[ -L "${SOURCE_FILE}" ]]; do
+  SOURCE_DIR=$(cd -- "$(dirname -- "${SOURCE_FILE}")" && pwd)
+  SOURCE_FILE=$(readlink "${SOURCE_FILE}")
+  if [[ "${SOURCE_FILE}" != /* ]]; then
+    SOURCE_FILE="${SOURCE_DIR}/${SOURCE_FILE}"
+  fi
+done
+SCRIPT_DIR=$(cd -- "$(dirname -- "${SOURCE_FILE}")" && pwd)
+
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh"
+# shellcheck source=lib/config.sh
+source "${SCRIPT_DIR}/lib/config.sh"
+# shellcheck source=lib/services.sh
+source "${SCRIPT_DIR}/lib/services.sh"
+# shellcheck source=lib/traffic.sh
+source "${SCRIPT_DIR}/lib/traffic.sh"
+# shellcheck source=lib/certs.sh
+source "${SCRIPT_DIR}/lib/certs.sh"
+# shellcheck source=lib/cli_users.sh
+source "${SCRIPT_DIR}/lib/cli_users.sh"
+# shellcheck source=lib/cli_subscriptions.sh
+source "${SCRIPT_DIR}/lib/cli_subscriptions.sh"
+# shellcheck source=lib/cli_traffic.sh
+source "${SCRIPT_DIR}/lib/cli_traffic.sh"
+# shellcheck source=lib/cli_server.sh
+source "${SCRIPT_DIR}/lib/cli_server.sh"
+
+show_help() {
+  cat <<'EOF'
+sb2sub 统一管理入口
+
+命令分组:
+  service    服务管理
+  user       用户管理
+  sub        订阅管理
+  traffic    流量管理
+  server     服务器配置
+  menu       中文交互菜单
+
+兼容快捷命令:
+  install / update / validate / generate-config / refresh-traffic
+  start / stop / restart / status / enable / disable / logs
+EOF
+}
+
+sb2sub_service_help() {
+  cat <<'EOF'
+服务管理
+
+可用命令:
+  sb2sub service start
+  sb2sub service stop
+  sb2sub service restart
+  sb2sub service status
+  sb2sub service enable
+  sb2sub service disable
+  sb2sub service logs
+  sb2sub service update
+EOF
+}
+
+sb2sub_handle_service_command() {
+  local action=${1:-help}
+  shift || true
+
+  case "${action}" in
+  help|--help|-h)
+    sb2sub_service_help
+    ;;
+  start)
+    sb2sub_start_service
+    ;;
+  stop)
+    sb2sub_stop_service
+    ;;
+  restart)
+    sb2sub_restart_service
+    ;;
+  status)
+    sb2sub_status_service
+    ;;
+  enable)
+    sb2sub_enable_service
+    ;;
+  disable)
+    sb2sub_disable_service
+    ;;
+  logs)
+    sb2sub_logs_service
+    ;;
+  update)
+    exec bash "${SCRIPT_DIR}/get-latest.sh"
+    ;;
+  *)
+    sb2sub_error "未知的服务命令: ${action}"
+    return 1
+    ;;
+  esac
+}
+
+case "${1:-help}" in
+help|--help|-h)
+  show_help
+  ;;
+service)
+  shift
+  sb2sub_handle_service_command "$@"
+  ;;
+user)
+  shift
+  sb2sub_handle_user_command "$@"
+  ;;
+sub|subscription|subscriptions)
+  shift
+  sb2sub_handle_sub_command "$@"
+  ;;
+traffic)
+  shift
+  sb2sub_handle_traffic_command "$@"
+  ;;
+server)
+  shift
+  sb2sub_handle_server_command "$@"
+  ;;
+menu)
+  exec bash "${SCRIPT_DIR}/menu.sh" menu
+  ;;
+install)
+  exec bash "${SCRIPT_DIR}/install.sh" install
+  ;;
+update)
+  exec bash "${SCRIPT_DIR}/get-latest.sh"
+  ;;
+validate|generate-config|refresh-traffic)
+  exec bash "${SCRIPT_DIR}/install.sh" "$1"
+  ;;
+start|stop|restart|status|enable|disable|logs)
+  sb2sub_handle_service_command "$1"
+  ;;
+*)
+  sb2sub_error "未知命令: ${1}"
+  exit 1
+  ;;
+esac

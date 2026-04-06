@@ -1,0 +1,14 @@
+[Unit]
+Description=sb2sub daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=__SB2SUB_HOME__
+ExecStart=__SB2SUB_HOME__/bin/sb2subd --mode serve --base-dir __SB2SUB_BASE_DIR__ --listen 127.0.0.1:18080
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
